@@ -11,6 +11,7 @@ vnode_t *root;
 vnode* find(vnode_t *vn, string path){
 }
 
+
 fd_t f_open(vnode_t *vn, string path, int flag){
   int inRoot = 0;
   vector<string> names = new vector<string>();
@@ -88,9 +89,11 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   return i;
 }
 
+
 size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
+
 
 int f_close(vnode_t *vn, fd_t fd){
   if (fd < 0 || fd >= MAXFTSIZE){
@@ -135,11 +138,25 @@ int f_rewind(fd_t fd){
 }
 
 int f_stat(struct stat_t *buf, fd_t fd){
-  //what's the buffer for?
+  if (fd < 0 || fd >= MAXFTSIZE){
+    //error message
+    return -1;
+  }
+  if (ftable[fd].index != fd){
+    //error message
+    return -1;
+  }
+
+  (*buf) = {ftable[fd].user, ftable[fd].vn->size, ftable[fd].flag};
+  return 0;
 }
 
 int f_remove(vnode_t *vn, const char *filename){
+  //check if being opened
+  //delete vnode
+  //mark data blocks as available
 }
+
 
 //same as f_open, except for flags
 //should we return a vnode instead of an int dir_t
@@ -175,6 +192,7 @@ dir_t f_opendir(vnode_t *vn, const char *filename){
   //fix return type/ val
   return 0;
 }
+
 
 struct dirent_t* f_readdir(vnode_t *vn, dir_t* dirp);
 int f_closedir(vnode_t *vn, dir_t* dirp);
