@@ -55,22 +55,27 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 
   if (fileExist == 0){
     //create new file (new inode etc)
+    //need to: edit permisssion, traverse for fat_ptr
+    vnode_t newVnode = {++numFiles, names.back(), curr, NULL, 0, 0, 0};
+    (*(curr->children)).push_back(newVnode);
   }
 
   //add file to filetable
   //traverse from beginning or last inserted index?
   int i = 0;
-  for (i = 0; i < MAX_FILE_TABLE_SIZE; i++){
-    if (ftable[i].index == 0 && ftable[i].vn == NULL && ftable[i].offset == 0 && ftable[i].flag == 0){
+  for (i = 0; i < MAXFTSIZE; i++){
+    if (ftable[i].index == -1){
       ftable[i].index = i;
       ftable[i].vn = curr;
-      //TALK ABOUT DISK PARTITION? OFFSET FOR DATA?
-      ftable[i].offset = fat_ptr;
+      if (flag == APPEND){
+	ftable[i].offset = 
+      } else {
+      }
       ftable[i].flag = flag;
       break;
     }
   }
-  if (i >= MAX_FILE_TABLE_SIZE){
+  if (i >= MAXFTSIZE){
     //error message -- file table full
     return -1;
   }
@@ -80,7 +85,31 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 
 size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
-int f_close(vnode_t *vn, fd_t fd);
+
+int f_close(vnode_t *vn, fd_t fd){
+  if (fd < 0 || fd >= MAXFTSIZE){
+    //error message
+    return -1;
+  }
+  if (ftable[fd].index != fd){
+    //error message
+    return -1;
+  }
+
+  if (f_rewind(vn, fd) == -1){
+    //error message
+    return -1;
+  }
+  
+  //insert empty entry into file table
+  ftable[fd].index = -1;
+  ftable[fd].vn = NULL;
+  ftable[fd].offset = -1;
+  ftable[fd].flag = -1;
+
+  return 0;
+}
+
 int f_seek(vnode_t *vn, int offset, int whence, fd_t fd);
 int f_rewind(vnode_t *vn, fd_t fd);
 int f_stat(vnode_t *vn, struct stat_t *buf, fd_t fd);

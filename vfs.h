@@ -1,7 +1,7 @@
 #ifndef _VFS_H
 #define _VFS_H
 
-#define MAX_FILE_TABLE_SIZE 	10000
+#define MAXFTSIZE 	10000
 
 typedef fd_t int;
 typedef dir_t int;
@@ -25,8 +25,9 @@ typedef struct {
   int flag;
 } ft_entry;
 
-extern ft_entry ftable[MAX_FILE_TABLE_SIZE];
-
+extern ft_entry ftable[MAXFTSIZE];
+extern int numFiles;
+//initialize all entries to have -1 integers & NULL for vnode
 
 
 
