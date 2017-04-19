@@ -7,6 +7,10 @@
 //make tree root global in shell
 vnode_t *root;
 
+//have a find function to get vnode pointer as helper for f_open, f_remove, other funcs with directories
+vnode* find(vnode_t *vn, string path){
+}
+
 fd_t f_open(vnode_t *vn, string path, int flag){
   int inRoot = 0;
   vector<string> names = new vector<string>();
@@ -84,6 +88,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 }
 
 size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
+
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 
 int f_close(vnode_t *vn, fd_t fd){
@@ -96,6 +101,7 @@ int f_close(vnode_t *vn, fd_t fd){
     return -1;
   }
 
+  //is this necessary??
   if (f_rewind(vn, fd) == -1){
     //error message
     return -1;
@@ -110,11 +116,65 @@ int f_close(vnode_t *vn, fd_t fd){
   return 0;
 }
 
-int f_seek(vnode_t *vn, int offset, int whence, fd_t fd);
-int f_rewind(vnode_t *vn, fd_t fd);
-int f_stat(vnode_t *vn, struct stat_t *buf, fd_t fd);
-int f_remove(vnode_t *vn, const char *filename);
-dir_t f_opendir(vnode_t *vn, const char *filename);
+//need disk design to implement f_seek
+int f_seek(int offset, int whence, fd_t fd);
+
+int f_rewind(fd_t fd){
+  if (fd < 0 || fd >= MAXFTSIZE){
+    //error message
+    return -1;
+  }
+  if (ftable[fd].index != fd){
+    //error message
+    return -1;
+  }
+
+  ftable[fd].offset = 0;
+  return 0;
+}
+
+int f_stat(struct stat_t *buf, fd_t fd){
+  //what's the buffer for?
+}
+
+int f_remove(vnode_t *vn, const char *filename){
+}
+
+//same as f_open, except for flags
+//should we return a vnode instead of an int dir_t
+dir_t f_opendir(vnode_t *vn, const char *filename){
+  int inRoot = 0;
+  vector<string> names = new vector<string>();
+  //parse path by "/" or "\", save names in vector
+  //if first elem parsed == "~" set inRoot to 1 & not add it to vector
+  vnode_t *curr;
+  if (inRoot == 0){
+    curr = vn;
+  } else {
+    curr = root;
+  }
+
+  //follow path
+  for (int i = 0; i < names.size(); i++){
+    int validDir = 0;
+    for (int j = 0; j < (*(curr->children)).size(); j++){
+      if ((*(curr->children))[j].name.compare(names[i]) == 0){
+	validDir = 1;
+	curr = (*(curr->children))[j];
+	break;
+      }
+    }
+    if (validDir == 0){
+      //set error message / #
+      //errno??
+      return -1;
+    }
+  }
+
+  //fix return type/ val
+  return 0;
+}
+
 struct dirent_t* f_readdir(vnode_t *vn, dir_t* dirp);
 int f_closedir(vnode_t *vn, dir_t* dirp);
 int f_mkdir(vnode_t *vn, const char *filename, int mode);
