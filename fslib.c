@@ -66,14 +66,15 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 
   //add file to filetable
   //traverse from beginning or last inserted index?
-  int i = 0;
+  int i;
   for (i = 0; i < MAXFTSIZE; i++){
     if (ftable[i].index == -1){
       ftable[i].index = i;
       ftable[i].vn = curr;
       if (flag == APPEND){
-	ftable[i].offset = 
+	//set offset to end of file
       } else {
+	ftable[i].offset = 0; //set offset to beginning
       }
       ftable[i].flag = flag;
       break;
