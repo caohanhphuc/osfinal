@@ -40,6 +40,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   int fileExist = 0;
   for (int i = 0; i < (*(curr->children)).size(); i++){
     if ((*(curr->children))[i].name.compare(names.back()) == 0){
+      curr = (*(curr->children))[i];
       fileExist = 1;
       break;
     }
@@ -57,14 +58,26 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   }
 
   //add file to filetable
-  
-  if (flag == OREAD){
-  } else if (flag == OWRITE){
-  } else if (flag == RDWR){
-  } else if (flag == APPEND){
-  } else {
+  //traverse from beginning or last inserted index?
+  int i = 0;
+  for (i = 0; i < MAX_FILE_TABLE_SIZE; i++){
+    if (ftable[i].index == 0 && ftable[i].vn == NULL && ftable[i].offset == 0 && ftable[i].flag == 0){
+      ftable[i].index = i;
+      ftable[i].vn = curr;
+      //TALK ABOUT DISK PARTITION? OFFSET FOR DATA?
+      ftable[i].offset = fat_ptr;
+      ftable[i].flag = flag;
+      break;
+    }
   }
+  if (i >= MAX_FILE_TABLE_SIZE){
+    //error message -- file table full
+    return -1;
+  }
+
+  return i;
 }
+
 size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 int f_close(vnode_t *vn, fd_t fd);

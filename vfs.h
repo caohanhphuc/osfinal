@@ -25,7 +25,7 @@ typedef struct {
   int flag;
 } ft_entry;
 
-extern ft_entry g_file_table[MAX_FILE_TABLE_SIZE];
+extern ft_entry ftable[MAX_FILE_TABLE_SIZE];
 
 
 
