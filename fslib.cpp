@@ -43,8 +43,21 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 	for (int j = 0; j < 7; i++){
 	  if (numchild == 0) break;
 	  numchild--;
-	  Vnode* newnode;
-	  lseek(g_disk_fd, BLOCKSIZE * curPtr, SEEK_SET);
+
+	  char* nodename;
+	  lseek(g_disk_fd, BLOCKSIZE * curPtr + j * 288, SEEK_SET);
+	  read(g_disk_fd, nodename, 255);
+	  if (names[j].compare(nodename) == 0){
+	    Vnode* newnode = (Vnode*) malloc (sizeof(Vnode));
+	    read(g_disk_fd, newnode, sizeof(Vnode - 8));
+	    newnode->parent = current;
+	    current = newnode;
+	    validDir = 1;
+	    break;
+	  }
+
+	  /* Vnode* newnode;
+	  lseek(g_disk_fd, BLOCKSIZE * curPtr + j * 288, SEEK_SET);
 	  read(g_disk_fd, newnode, sizeof(Vnode)); //change read in size
 	  //need to rearrange fields in Vnode
 	  if (names[j].compare(newnode->name) == 0){
@@ -53,6 +66,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 	    validDir = 1;
 	    break;
 	  }
+	  */
 	}
 	curPtr = g_FAT_table[curPtr];
       }
@@ -101,6 +115,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
     newVnode->type = 0;
     newVnode->fatPtr = newBlock;
     *(current->children).push_back(&newVnode);
+    //write to file
   }
 
   //add file to filetable
@@ -133,25 +148,22 @@ size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 
 
-int f_close(vnode_t *vn, fd_t fd){
+int f_close(fd_t fd){
   if (fd < 0 || fd >= MAXFTSIZE){
     //error message
     return -1;
   }
+  
   if (ftable[fd].index != fd){
     //error message
     return -1;
   }
 
-  //is this necessary??
-  if (f_rewind(vn, fd) == -1){
-    //error message
-    return -1;
-  }
+  free(ftable[fd].vnode);
   
   //insert empty entry into file table
   ftable[fd].index = -1;
-  ftable[fd].vn = NULL;
+  ftable[fd].vnode = NULL;
   ftable[fd].offset = -1;
   ftable[fd].flag = -1;
 
