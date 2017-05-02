@@ -28,7 +28,7 @@ fd_t f_open(string path, int flag){
     if (current->type == 1 && current->size > 0){
       int numchild = current->size;
       int curPtr = current->fatPtr;
-      while (curPtr != USMAX){
+      while (curPtr != USMAX && numchild > 0){
 	for (int j = 0; j < 7; i++){
 	  if (numchild == 0) break;
 	  numchild--;
@@ -91,7 +91,25 @@ fd_t f_open(string path, int flag){
     newVnode->parent = current;
     newVnode->type = 0;
     newVnode->fatPtr = newBlock;
-    //write to file
+
+    //write to disk
+    //traverse FAT to find last block written
+    int ptr = current->fatPtr;
+    while (g_FAT_table[ptr] != USMAX){
+      ptr = g_FAT_table[ptr];
+    }
+
+    int nodeAddr;
+    if (current->size % 7 == 0){
+      //find next available block in FAT
+      int nextAvail;
+      nodeAddr = BLOCKSIZE * nextAvail;
+    } else {
+      nodeAddr = BLOCKSIZE * ptr + current->size % 7 * DNODESIZE;
+    }
+    lseek(g_disk_fd, nodeAddr, SEEK_SET);
+    write(g_disk_fd, currFile, DNODESIZE);
+    current->size += 1;
   }
 
   //add file to filetable
@@ -101,6 +119,7 @@ fd_t f_open(string path, int flag){
     return -1;
   }
   g_file_table.addFileEntry(FtEntry(idx, currFile, 0, flag));
+  
   
   /* int i;
   for (i = 0; i < MAXFTSIZE; i++){
@@ -129,7 +148,6 @@ fd_t f_open(string path, int flag){
 size_t f_read(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
 
 size_t f_write(vnode_t *vn, void *data, size_t size, int num, fd_t fd);
-
 
 int f_close(fd_t fd){
   if (fd < 0 || fd >= MAXFTSIZE){
