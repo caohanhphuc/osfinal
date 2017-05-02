@@ -16,13 +16,6 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   //parse path by "/" or "\", save names in vector
   //if first elem parsed == "~" set inRoot to 1 & not add it to vector
   parseLine(path, names); //check if parseLine func parses by \ or /
-  
-  vnode_t *curr;
-  if (inRoot == 0){
-    curr = vn;
-  } else {
-    curr = root;
-  }
 
   //int curadd;
   int numchild;
@@ -52,7 +45,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
 	  numchild--;
 	  Vnode* newnode;
 	  lseek(g_disk_fd, BLOCKSIZE * curPtr, SEEK_SET);
-	  read(g_disk_fd, newnode, sizeof(Vnode));
+	  read(g_disk_fd, newnode, sizeof(Vnode)); //change read in size
 	  //need to rearrange fields in Vnode
 	  if (names[j].compare(newnode->name) == 0){
 	    *(current->children).add(newnode);
@@ -99,7 +92,14 @@ fd_t f_open(vnode_t *vn, string path, int flag){
     }
 
     //do we need id??
-    Vnode newVnode = {names.back(), ++numFiles, names.back(), curr, NULL, 0, 0, 0};
+    Vnode *newVnode = (Vnode*) malloc (sizeof(Vnode));
+    newVnode->name = names.back();
+    //uid, gid, permission, timestamp
+    newVnode->size = 0;
+    newVnode->parent = current;
+    *(newVnode->children) = new vector<Vnode*>*();
+    newVnode->type = 0;
+    newVnode->fatPtr = newBlock;
     *(current->children).push_back(&newVnode);
   }
 
