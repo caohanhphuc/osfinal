@@ -7,11 +7,9 @@ vnode_t *root;
 //have a find function to get vnode pointer as helper for f_open, f_remove, other funcs with directories
 
 fd_t f_open(string path, int flag){
-  int inRoot = 0;
   Vnode* currFile;
   vector<string> names = new vector<string>();
   //parse path by "/" or "\", save names in vector
-  //if first elem parsed == "~" set inRoot to 1 & not add it to vector
   parseLine(path, names); //check if parseLine func parses by \ or /
 
   int numchild;  
@@ -208,39 +206,7 @@ int f_remove(vnode_t *vn, const char *filename){
 
 //same as f_open, except for flags
 //should we return a vnode instead of an int dir_t
-dir_t f_opendir(vnode_t *vn, const char *filename){
-  int inRoot = 0;
-  vector<string> names = new vector<string>();
-  //parse path by "/" or "\", save names in vector
-  //if first elem parsed == "~" set inRoot to 1 & not add it to vector
-  vnode_t *curr;
-  if (inRoot == 0){
-    curr = vn;
-  } else {
-    curr = root;
-  }
-
-  //follow path
-  for (int i = 0; i < names.size(); i++){
-    int validDir = 0;
-    for (int j = 0; j < (*(curr->children)).size(); j++){
-      if ((*(curr->children))[j].name.compare(names[i]) == 0){
-	validDir = 1;
-	curr = (*(curr->children))[j];
-	break;
-      }
-    }
-    if (validDir == 0){
-      //set error message / #
-      //errno??
-      return -1;
-    }
-  }
-
-  //fix return type/ val
-  return 0;
-}
-
+dir_t f_opendir(vnode_t *vn, const char *filename);
 
 struct dirent_t* f_readdir(vnode_t *vn, dir_t* dirp);
 int f_closedir(vnode_t *vn, dir_t* dirp);
