@@ -6,7 +6,7 @@ vnode_t *root;
 
 //have a find function to get vnode pointer as helper for f_open, f_remove, other funcs with directories
 
-fd_t f_open(string path, int flag){
+Vnode* findFile(char* path){
   Vnode* currFile;
   vector<string> names = new vector<string>();
   //parse path by "/" or "\", save names in vector
@@ -60,13 +60,20 @@ fd_t f_open(string path, int flag){
     }
   }
 
+  if (fileExist == 0) return NULL;
+  return currFile;
+}
+
+fd_t f_open(string path, int flag){
+  Vnode* oldCurrent = current;
+  Vnode* currFile = findFile(path);
   //return error if read a non existing file
-  if (fileExist == 0 && (flag == OREAD || flag == RDWR)){
+  if (currFile == NULL && (flag == OREAD || flag == RDWR)){
     //set error message / #
     return -1;
   }
 
-  if (fileExist == 0){
+  if (currFile == NULL){
     //need to: edit permisssion, traverse for fat_ptr
     int newBlock = -1;
     for (int i = 0; i < FATSIZE; i++){
@@ -138,6 +145,7 @@ fd_t f_open(string path, int flag){
     return -1;
   }
   */
+  current = oldCurrent;
 
   return i;
 }
@@ -197,10 +205,42 @@ int f_stat(struct stat_t *buf, fd_t fd){
   return 0;
 }
 
-int f_remove(vnode_t *vn, const char *filename){
-  //check if being opened
-  //delete vnode
-  //mark data blocks as available
+int f_remove(const char *filename){
+  //check if being opened to close
+  vector<string> names = new vector<string>();
+  parseLine(filename, names);
+  int ftIndex = -1;
+
+  for (int i = 0; i < MAXFTSIZE; i++){
+    Vnode* entryVnode = g_file_table.getFileEntry(i)->vnode;
+    if (entryVnode->name.compare(names.back()) == 0){
+      int j;
+      for (j = names.size()-1; j >= 0; j--){
+	if (entryVnode->name.compare(names[j]) != 0){
+	  break;
+	} else {
+	  entryVnode = entryVnode->parent;
+	}
+      }
+      if (j < 0){
+	ftIndex = i;
+      }
+    }
+  }
+
+  if (ftIndex >= 0){
+    //mark data blocks as available
+    int ptr = g_file_table.getFileEntry(i)->vnode->fatPtr;
+    while (ptr != USMAX){
+      ptr = g_FAT_table[ptr];
+      g_FAT_table[ptr] = USMAX;
+    }
+    f_close(ftIndex);
+  }
+
+  return 0;
+
+  
 }
 
 
