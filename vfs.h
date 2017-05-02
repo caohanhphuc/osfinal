@@ -29,6 +29,7 @@ typedef struct {
 } ft_entry;
 
 typedef struct {
+  int gid;
   int uid;
   int size;
   int mode;

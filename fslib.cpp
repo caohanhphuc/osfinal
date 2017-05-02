@@ -1,14 +1,12 @@
-#ifndef _FSLIB_H
-#define _FSLIB_H
-
-#include "vfs.h"
+#include "vfs.hpp"
 
 //record current vnode visited in shell
 //make tree root global in shell
 vnode_t *root;
 
 //have a find function to get vnode pointer as helper for f_open, f_remove, other funcs with directories
-vnode* find(vnode_t *vn, string path){
+Vnode* findVnode(vnode_t *vn, string path){
+  
 }
 
 
@@ -17,7 +15,7 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   vector<string> names = new vector<string>();
   //parse path by "/" or "\", save names in vector
   //if first elem parsed == "~" set inRoot to 1 & not add it to vector
-  parseLine(path, names);
+  parseLine(path, names); //check if parseLine func parses by \ or /
   
   vnode_t *curr;
   if (inRoot == 0){
@@ -26,40 +24,59 @@ fd_t f_open(vnode_t *vn, string path, int flag){
     curr = root;
   }
 
+  //int curadd;
+  int numchild;
+  
   int start = 0;
+  //create g_vnode *current to store currently visited vnode
   if (names[i].compare("~") == 0){
     start = 1;
+    //curadd = BLOCKSIZE * rootreg;
+    //lseek(g_disk_fd, curadd, SEEK_SET);
+    //read(g_disk_fd, current, sizeof(Vnode));
+    current = root;
+  } else {
+    //lseek(g_disk_fd, BLOCKSIZE * current->fatPtr);
   }
   
   //follow path
-  for (int i = start; i < names.size()-1; i++){
-    int validDir = 0;
-    for (int j = 0; j < (*(curr->children)).size(); j++){
-      if ((*(curr->children))[j].name.compare(names[i]) == 0){
-	validDir = 1;
-	curr = (*(curr->children))[j];
-	break;
-      }
-    }
-    if (validDir == 0){
-      //set error message / #
-      //errno??
-      return -1;
-    }
-  }
-
-  //check if file exists
   int fileExist = 0;
-  for (int i = 0; i < (*(curr->children)).size(); i++){
-    if ((*(curr->children))[i].name.compare(names.back()) == 0){
-      curr = (*(curr->children))[i];
-      fileExist = 1;
-      break;
+  for (int i = start; i < names.size(); i++){
+    int validDir = 0;
+    if (current->type == 0 && current->size > 0){
+      int numchild = current->size;
+      int curPtr = current->fatPtr;
+      while (curPtr != -1){
+	for (int j = 0; j < 7; i++){
+	  if (numchild == 0) break;
+	  numchild--;
+	  Vnode* newnode;
+	  lseek(g_disk_fd, BLOCKSIZE * curPtr, SEEK_SET);
+	  read(g_disk_fd, newnode, sizeof(Vnode));
+	  //need to rearrange fields in Vnode
+	  if (names[j].compare(newnode->name) == 0){
+	    *(current->children).add(newnode);
+	    current = newnode;
+	    validDir = 1;
+	    break;
+	  }
+	}
+	curPtr = g_FAT_table[curPtr];
+      }
+    } else {
+      //not a directory
+      if (i == names.size()-1){
+	//found file, file's vnode stored in current
+	fileExist = 1;
+	break;
+      } else {
+	//print error message
+	return -1;
+      }
     }
   }
 
   //return error if read a non existing file
-  //do we allow multiple flags? no?
   if (fileExist == 0 && (flag == OREAD || flag == RDWR)){
     //set error message / #
     return -1;
@@ -68,8 +85,22 @@ fd_t f_open(vnode_t *vn, string path, int flag){
   if (fileExist == 0){
     //create new file (new inode etc)
     //need to: edit permisssion, traverse for fat_ptr
-    vnode_t newVnode = {++numFiles, names.back(), curr, NULL, 0, 0, 0};
-    (*(curr->children)).push_back(newVnode);
+    int newBlock = -1;
+    for (int i = 0; i < FATSIZE; i++){
+      if (g_FAT_table[i] == -2){ //agree on indices in FAT for empty blocks
+	newBlock = i;
+	break;
+      }
+    }
+    
+    if (newBlock == -1){
+      //set error message -- ran out of data blocks
+      return -1;
+    }
+
+    //do we need id??
+    Vnode newVnode = {names.back(), ++numFiles, names.back(), curr, NULL, 0, 0, 0};
+    *(current->children).push_back(&newVnode);
   }
 
   //add file to filetable
@@ -207,5 +238,3 @@ int f_mkdir(vnode_t *vn, const char *filename, int mode);
 int f_rmdir(vnode_t *vn, const char *filename);
 int f_mount(vnode_t *vn, const char *type, const char *dir, int flags, void *data);
 int f_umount(vnode_t *vn, const char *dir, int flags);
-
-#endif //_FSLIB_H

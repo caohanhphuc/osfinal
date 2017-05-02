@@ -1,6 +1,3 @@
-
-
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -23,17 +20,18 @@
 
 using namespace std;
 
-
-
 Tokenizer g_tokenizer(DELIM, SPECIAL_DELIM);
-
+int FAT[65526];
+ft_entry ftable[MAXFTSIZE];
+int datareg;
+int diskfd;
 
 // SIGNAL
 
 void resetSignalHandler(void) {
-	for (int i = SIGHUP; i<= SIGUSR2; i++) {
-		signal(i, SIG_DFL);
-	}
+  for (int i = SIGHUP; i<= SIGUSR2; i++) {
+    signal(i, SIG_DFL);
+  }
 }
 
 
@@ -41,133 +39,133 @@ void resetSignalHandler(void) {
 // COMMAND 
 
 Command::Command(void) {
-	argv.clear();
-	bg_flag = false;
+  argv.clear();
+  bg_flag = false;
 }
 
 Command::~Command(void) {}
 
 ostream& operator<<(ostream& os, Command const& cmd) {
-	for (int i = 0; i < cmd.argv.size(); i++) {
-		os << cmd.argv[i] << " ";
-	}
-	return os << endl;
+  for (int i = 0; i < cmd.argv.size(); i++) {
+    os << cmd.argv[i] << " ";
+  }
+  return os << endl;
 }
 
 
 
 string readLine(void) {
-	char* line = NULL;
-	size_t size = 0;
-	if (getline(&line, &size, stdin) == -1) {
-		//error handling
-	}
-	line[strcspn(line, "\r\n")] = 0;
-	return string(line);
+  char* line = NULL;
+  size_t size = 0;
+  if (getline(&line, &size, stdin) == -1) {
+    //error handling
+  }
+  line[strcspn(line, "\r\n")] = 0;
+  return string(line);
 }
 
 
 
 void parseLine(string& line, vector<Command>& output) {
-	g_tokenizer.setString(line);
+  g_tokenizer.setString(line);
 
-	Command cmd;
-	string token;
+  Command cmd;
+  string token;
 
-	while ((token = g_tokenizer.getNextToken()) != "") {
-		if (token == "&") {
-			cmd.bg_flag = true;
-		}
+  while ((token = g_tokenizer.getNextToken()) != "") {
+    if (token == "&") {
+      cmd.bg_flag = true;
+    }
 		
-		if (token == "&" || token == ";") {
-			output.push_back(cmd);
+    if (token == "&" || token == ";") {
+      output.push_back(cmd);
 
-			cmd.argv.clear();
-			cmd.bg_flag = false;
+      cmd.argv.clear();
+      cmd.bg_flag = false;
 
-			continue;
-		}
+      continue;
+    }
 
-		cmd.argv.push_back(token);
-	}
+    cmd.argv.push_back(token);
+  }
 
-	if (! cmd.argv.empty()) {
-		output.push_back(cmd);
-	}
+  if (! cmd.argv.empty()) {
+    output.push_back(cmd);
+  }
 }
 
 
 
 int executeCommand(Command const& cmd) {
-	if (cmd.argv.empty() || cmd.argv[0] == "") {
-		return 1;
-	}
+  if (cmd.argv.empty() || cmd.argv[0] == "") {
+    return 1;
+  }
 
-	BuiltinFunc func = g_builtinList.findBuiltinFunc(cmd.argv[0]);
-	if (func) {
-		return (*func)(cmd.argv);
-	}
+  BuiltinFunc func = g_builtinList.findBuiltinFunc(cmd.argv[0]);
+  if (func) {
+    return (*func)(cmd.argv);
+  }
 
-	return executeSystem(cmd);
+  return executeSystem(cmd);
 }
 
 
 
 int executeSystem(Command const& cmd) {
-	if (cmd.argv.empty() || cmd.argv[0] == "") {
-		return 1;
-	}
+  if (cmd.argv.empty() || cmd.argv[0] == "") {
+    return 1;
+  }
 
-	pid_t pid;
-	int status;
+  pid_t pid;
+  int status;
 
-	pid = fork();
-	if (! pid) {
-		resetSignalHandler();
+  pid = fork();
+  if (! pid) {
+    resetSignalHandler();
 
-		char** argv = stringVec2CharDoublePtr(cmd.argv);
+    char** argv = stringVec2CharDoublePtr(cmd.argv);
 
-		if (execvp(argv[0], argv) == -1) {
-			//error handling
-		}
-	}
-	else if (pid > 0) {
-		do {
-			if (waitpid(pid, &status, WUNTRACED) == -1) {
-				//error handling
-			}
-		} while (! WIFEXITED(status) && ! WIFSIGNALED(status));
-	}
-	else {
-		//error handling				
-	}
+    if (execvp(argv[0], argv) == -1) {
+      //error handling
+    }
+  }
+  else if (pid > 0) {
+    do {
+      if (waitpid(pid, &status, WUNTRACED) == -1) {
+	//error handling
+      }
+    } while (! WIFEXITED(status) && ! WIFSIGNALED(status));
+  }
+  else {
+    //error handling				
+  }
 
-	return 1;
+  return 1;
 }
 
 
 
 void mainLoop(void) {
-	string line;
-	vector<Command> commands;
-	int status;
+  string line;
+  vector<Command> commands;
+  int status;
 
-	do {
-		string curPath = string(getcwd(NULL, 0));
-		cout << curPath << ": ";
-		fflush(stdout);
+  do {
+    string curPath = string(getcwd(NULL, 0));
+    cout << curPath << ": ";
+    fflush(stdout);
 
-		line = readLine();
+    line = readLine();
 
-		parseLine(line, commands);
+    parseLine(line, commands);
 
-		for (int i = 0; i < commands.size(); i++) {
-			status = executeCommand(commands[i]);
-		}
+    for (int i = 0; i < commands.size(); i++) {
+      status = executeCommand(commands[i]);
+    }
 
-		line.clear();
-		commands.clear();
-	} while (status >= 0);
+    line.clear();
+    commands.clear();
+  } while (status >= 0);
 }
 
 
@@ -175,11 +173,11 @@ void mainLoop(void) {
 
 int main(void) {
 
-	printf("Welcome to S&J's Shell!"
-			" You can type in 'help' to look for some instructions for this shell\n");
+  printf("Welcome to S&J's Shell!"
+	 " You can type in 'help' to look for some instructions for this shell\n");
 
-	mainLoop();
+  mainLoop();
 
 
-	return 0;
+  return 0;
 }
