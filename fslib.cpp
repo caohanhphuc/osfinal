@@ -6,7 +6,7 @@ vnode_t *root;
 
 //have a find function to get vnode pointer as helper for f_open, f_remove, other funcs with directories
 
-Vnode* findFile(char* path){
+Vnode* findFile(char* path, int type){
   Vnode* currFile;
   vector<string> names = new vector<string>();
   //parse path by "/" or "\", save names in vector
@@ -239,14 +239,14 @@ int f_remove(const char *filename){
   }
 
   return 0;
-
-  
 }
 
 
 //same as f_open, except for flags
-//should we return a vnode instead of an int dir_t
-dir_t f_opendir(vnode_t *vn, const char *filename);
+//return a file descriptor
+int f_opendir(vnode_t *vn, const char *filename){
+  
+}
 
 struct dirent_t* f_readdir(vnode_t *vn, dir_t* dirp);
 int f_closedir(vnode_t *vn, dir_t* dirp);
